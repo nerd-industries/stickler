@@ -4,3 +4,4 @@ nelko.apk
 app/ui/dist/
 .superpowers/
 app/src-tauri/gen/
+.playwright-mcp/
