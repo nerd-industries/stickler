@@ -3,3 +3,4 @@ node_modules/
 nelko.apk
 app/ui/dist/
 .superpowers/
+app/src-tauri/gen/
