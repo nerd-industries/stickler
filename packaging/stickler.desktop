@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Stickler
+GenericName=Label Printer
+Comment=Design and print labels on a Nelko P21
+Exec=stickler
+Icon=stickler
+Terminal=false
+Categories=Office;Utility;
+Keywords=label;printer;nelko;p21;sticker;
+StartupWMClass=stickler

@@ -3,6 +3,7 @@ name = "nelko-mcp"
 edition.workspace = true
 version.workspace = true
 license.workspace = true
+autobins = false
 
 [dependencies]
 nelko-core.workspace = true
@@ -17,3 +18,7 @@ base64 = "0.22"
 rmcp = { version = "3.10", features = ["server", "client", "macros", "transport-io"] }
 tempfile = "3"
 async-trait = "0.1"
+
+[[bin]]
+name = "stickler-mcp"
+path = "src/main.rs"
