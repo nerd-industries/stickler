@@ -9,6 +9,7 @@ pub mod lock;
 pub mod printer;
 pub mod protocol;
 pub mod render;
+pub mod service;
 pub mod template;
 pub mod transport;
 

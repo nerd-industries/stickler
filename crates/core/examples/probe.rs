@@ -1,5 +1,5 @@
 //! Hardware probe for the P21.
-//! Usage: probe scan | pair <MAC> | info | selftest | orient | text <lines..> | preview <lines..>
+//! Usage: probe scan | pair <MAC> | info | selftest | orient | text <lines..> | preview <lines..> | report | print <template> k=v..
 
 use nelko_core::config::Config;
 use nelko_core::discovery;
@@ -70,7 +70,20 @@ async fn main() -> R {
             p.print(&job).await?;
             println!("printed");
         }
-        _ => eprintln!("usage: probe scan | pair <MAC> | info | selftest | orient | text <lines..> | preview <lines..>"),
+        Some("report") => {
+            let n = nelko_core::service::Nelko::new()?;
+            println!("{}", serde_json::to_string_pretty(&n.report().await)?);
+        }
+        Some("print") => {
+            // probe print <template-id> key=value ...
+            let id = args.get(1).ok_or("usage: probe print <template> key=value...")?;
+            let values = args[2..].iter().filter_map(|kv| kv.split_once('=')).map(|(k, v)| (k.to_owned(), v.replace("\\n", "\n"))).collect();
+            let n = nelko_core::service::Nelko::new()?;
+            let req = nelko_core::service::PrintRequest { template_id: id.clone(), values, style: None, size: None, copies: 1, density: None };
+            let r = n.print(req).await?;
+            println!("printed on {} ({})", r.size, r.source.describe());
+        }
+        _ => eprintln!("usage: probe scan | pair <MAC> | info | selftest | orient | text <lines..> | preview <lines..> | report | print <template> k=v.."),
     }
     Ok(())
 }
