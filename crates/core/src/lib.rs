@@ -2,5 +2,7 @@
 //! rendering, templates and the service facade shared by the app and MCP server.
 
 pub mod error;
+pub mod geometry;
+pub mod protocol;
 
 pub use error::{NelkoError, PrinterError, RenderError};

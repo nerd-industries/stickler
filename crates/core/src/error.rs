@@ -13,8 +13,8 @@ pub enum PrinterError {
     Timeout(&'static str),
     #[error("The printer sent an unexpected reply: {0}")]
     BadReply(String),
-    #[error("Printer status: {0:#04x}")]
-    Status(u8),
+    #[error("{}", .0.message())]
+    Status(crate::protocol::PrinterStatus),
     #[error("Connection error: {0}")]
     Io(#[from] std::io::Error),
     #[error("Bluetooth error: {0}")]
