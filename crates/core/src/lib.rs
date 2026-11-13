@@ -2,6 +2,7 @@
 //! rendering, templates and the service facade shared by the app and MCP server.
 
 pub mod config;
+pub mod discovery;
 pub mod error;
 pub mod geometry;
 pub mod lock;

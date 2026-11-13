@@ -32,6 +32,14 @@ const UNREACHABLE: &str = "Printer is off, out of range, or connected to another
 /// Bluetooth Classic RFCOMM, channel 1.
 pub struct RfcommTransport {
     stream: bluer::rfcomm::Stream,
+    /// Until the first write succeeds, the link may still be coming up.
+    connect_deadline: Option<tokio::time::Instant>,
+}
+
+/// bluer's connect can return while the RFCOMM link is still being set up;
+/// writes then fail with ENOTCONN until it is (verified on hardware, ~3 s).
+pub fn is_still_connecting(e: &std::io::Error) -> bool {
+    e.raw_os_error() == Some(107)
 }
 
 impl RfcommTransport {
@@ -44,15 +52,34 @@ impl RfcommTransport {
             Ok(Ok(s)) => s,
             _ => return Err(PrinterError::Unreachable(UNREACHABLE.into())),
         };
-        // The P21 ignores commands sent right after connecting (spec §9.1).
-        tokio::time::sleep(Duration::from_secs(1)).await;
-        Ok(Self { stream })
+        Ok(Self { stream, connect_deadline: Some(tokio::time::Instant::now() + timeout) })
     }
 }
 
 #[async_trait]
 impl Transport for RfcommTransport {
     async fn write_all(&mut self, b: &[u8]) -> Result<(), PrinterError> {
+        if let Some(deadline) = self.connect_deadline {
+            let first = &b[..b.len().min(1024)];
+            loop {
+                match self.stream.write_all(first).await {
+                    Ok(()) => break,
+                    Err(e) if is_still_connecting(&e) && tokio::time::Instant::now() < deadline => {
+                        tokio::time::sleep(Duration::from_millis(100)).await
+                    }
+                    Err(e) if is_still_connecting(&e) => {
+                        return Err(PrinterError::Unreachable(UNREACHABLE.into()));
+                    }
+                    Err(e) => return Err(e.into()),
+                }
+            }
+            self.connect_deadline = None;
+            for chunk in b[first.len()..].chunks(1024) {
+                self.stream.write_all(chunk).await?;
+            }
+            self.stream.flush().await?;
+            return Ok(());
+        }
         for chunk in b.chunks(1024) {
             self.stream.write_all(chunk).await?;
         }

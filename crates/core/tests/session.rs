@@ -109,3 +109,10 @@ fn config_roundtrip_and_defaults() {
     c.save_to(&path).unwrap();
     assert_eq!(Config::load_from(&path).unwrap(), c);
 }
+
+#[test]
+fn not_connected_errors_are_retryable() {
+    use nelko_core::transport::is_still_connecting;
+    assert!(is_still_connecting(&std::io::Error::from_raw_os_error(107)));
+    assert!(!is_still_connecting(&std::io::Error::from_raw_os_error(104)));
+}

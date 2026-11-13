@@ -232,7 +232,7 @@ Any layout can add `border`: none, thin, thick, rounded or double. The built-in 
 
 ### 9.1 Hardware findings (user's P21, 2026-11-12) — binding
 - Advertised name **`P21`**. Shows up in a BR/EDR scan; pairs with **no PIN**; exposes the Serial Port UUID.
-- Wait about **1 s after the RFCOMM connect** before sending commands; earlier commands were ignored.
+- bluer's `rfcomm::Stream::connect` can return while the link is still coming up. Writes fail with ENOTCONN (107) for about 3 s, so the transport retries the first write until the connect deadline. (The earlier "no reply" was the missing CRLF, not timing.)
 - **The status and label queries need a CRLF** on this firmware: `1B 21 3F 0D 0A` and `1B 21 6F 0D 0A`. Without it there's no reply.
 - Replies have a **space after the keyword**: `BATTERY \x99\x00\r\n` (99%, not charging) and `CONFIG \x00\xcb\x00\x02\x02\x04\x02\x0e\x02\x01\r\n` (203 dpi, hw 0.2.2, fw 4.2.14, auto-off 30 min, beep on). Parsers accept an optional space.
 - The roll tag is `000c011203000301121215280f0eed03`, identical to the documented example (14×40 white, gapped, v1).

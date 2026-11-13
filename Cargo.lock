@@ -459,6 +459,7 @@ dependencies = [
  "async-trait",
  "bluer",
  "dirs",
+ "futures-util",
  "serde",
  "serde_json",
  "tempfile",
