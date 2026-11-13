@@ -1,10 +1,14 @@
 //! Hardware probe for the P21.
-//! Usage: probe scan | pair <MAC> | info | selftest | orient
+//! Usage: probe scan | pair <MAC> | info | selftest | orient | text <lines..> | preview <lines..>
 
 use nelko_core::config::Config;
 use nelko_core::discovery;
 use nelko_core::lock::{DEFAULT_LOCK_WAIT, PrinterLock};
+use nelko_core::geometry::print_area;
 use nelko_core::printer::Printer;
+use nelko_core::protocol::PrintJob;
+use nelko_core::render::text::{TextStyle, draw_text_fit};
+use nelko_core::render::{Canvas, finish};
 use nelko_core::transport::RfcommTransport;
 use std::time::Duration;
 
@@ -46,7 +50,27 @@ async fn main() -> R {
             let (_lock, mut p) = open(&cfg).await?;
             p.self_test().await?;
         }
-        _ => eprintln!("usage: probe scan | pair <MAC> | info | selftest"),
+        Some(cmd @ ("orient" | "text" | "preview")) => {
+            // text/preview: probe text "line 1" ["line 2"]; preview writes label.png
+            let lines: Vec<&str> = if cmd == "orient" { vec!["◀ TOP EDGE"] } else { args[1..].iter().map(String::as_str).collect() };
+            let size = cfg.last_label.unwrap_or("14x40".parse()?);
+            let mut c = Canvas::new(&print_area(size));
+            let b = c.bounds();
+            c.stroke_round_rect(b.inset(1.5), 10.0, 3.0);
+            let style = TextStyle { bold: true, ..Default::default() };
+            draw_text_fit(&mut c, b.inset(8.0), &lines, &style)?;
+            let label = finish(c, size, 128);
+            if cmd == "preview" {
+                std::fs::write("label.png", label.preview_png(2))?;
+                println!("wrote label.png ({size})");
+                return Ok(());
+            }
+            let job = PrintJob { size, gap_mm: 5, density: cfg.density, copies: 1, bitmap: label.to_print_bitmap(cfg.rotation) };
+            let (_lock, mut p) = open(&cfg).await?;
+            p.print(&job).await?;
+            println!("printed");
+        }
+        _ => eprintln!("usage: probe scan | pair <MAC> | info | selftest | orient | text <lines..> | preview <lines..>"),
     }
     Ok(())
 }

@@ -8,6 +8,7 @@ pub mod geometry;
 pub mod lock;
 pub mod printer;
 pub mod protocol;
+pub mod render;
 pub mod transport;
 
 pub use error::{NelkoError, PrinterError, RenderError};
