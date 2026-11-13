@@ -1,0 +1,23 @@
+{
+  "id": "boxed-text",
+  "name": "Boxed text",
+  "category": "Text",
+  "layout": "text",
+  "fields": [
+    {
+      "key": "text",
+      "label": "Text",
+      "kind": "multiline",
+      "default": "Fragile"
+    }
+  ],
+  "style": {
+    "font": "sans",
+    "bold": true,
+    "align": "center",
+    "border": "rounded",
+    "invert": false,
+    "barcode": "auto",
+    "date_format": "%b %-d, %Y"
+  }
+}

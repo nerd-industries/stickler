@@ -1,0 +1,29 @@
+{
+  "id": "toolbox",
+  "name": "Toolbox",
+  "category": "Home",
+  "layout": "icon_text",
+  "fields": [
+    {
+      "key": "icon",
+      "label": "Icon",
+      "kind": "icon",
+      "default": "wrench"
+    },
+    {
+      "key": "text",
+      "label": "Contents",
+      "kind": "multiline",
+      "default": "Screws & Bolts"
+    }
+  ],
+  "style": {
+    "font": "condensed",
+    "bold": true,
+    "align": "left",
+    "border": "none",
+    "invert": false,
+    "barcode": "auto",
+    "date_format": "%b %-d, %Y"
+  }
+}

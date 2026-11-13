@@ -1,0 +1,29 @@
+{
+  "id": "kitchen-jar",
+  "name": "Kitchen jar",
+  "category": "Kitchen",
+  "layout": "icon_text",
+  "fields": [
+    {
+      "key": "icon",
+      "label": "Icon",
+      "kind": "icon",
+      "default": "cooking-pot"
+    },
+    {
+      "key": "text",
+      "label": "Name",
+      "kind": "multiline",
+      "default": "Pasta"
+    }
+  ],
+  "style": {
+    "font": "rounded",
+    "bold": true,
+    "align": "left",
+    "border": "none",
+    "invert": false,
+    "barcode": "auto",
+    "date_format": "%b %-d, %Y"
+  }
+}

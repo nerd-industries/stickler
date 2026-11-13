@@ -1,0 +1,29 @@
+{
+  "id": "wifi-qr",
+  "name": "Wi-Fi QR",
+  "category": "Tech",
+  "layout": "qr_text",
+  "fields": [
+    {
+      "key": "qr",
+      "label": "Wi-Fi",
+      "kind": "qr_data",
+      "default": "WIFI:T:WPA;S:MyNetwork;P:password;;"
+    },
+    {
+      "key": "text",
+      "label": "Text",
+      "kind": "multiline",
+      "default": "Scan for\nWi-Fi"
+    }
+  ],
+  "style": {
+    "font": "sans",
+    "bold": true,
+    "align": "left",
+    "border": "none",
+    "invert": false,
+    "barcode": "auto",
+    "date_format": "%b %-d, %Y"
+  }
+}

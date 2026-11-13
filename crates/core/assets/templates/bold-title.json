@@ -1,0 +1,23 @@
+{
+  "id": "bold-title",
+  "name": "Bold title",
+  "category": "Text",
+  "layout": "text",
+  "fields": [
+    {
+      "key": "text",
+      "label": "Title",
+      "kind": "text",
+      "default": "Spare Parts"
+    }
+  ],
+  "style": {
+    "font": "sans_bold",
+    "bold": true,
+    "align": "center",
+    "border": "none",
+    "invert": false,
+    "barcode": "auto",
+    "date_format": "%b %-d, %Y"
+  }
+}

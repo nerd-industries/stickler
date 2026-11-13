@@ -1,0 +1,29 @@
+{
+  "id": "leftovers",
+  "name": "Leftovers",
+  "category": "Kitchen",
+  "layout": "date_stamp",
+  "fields": [
+    {
+      "key": "label",
+      "label": "Label",
+      "kind": "text",
+      "default": "Leftovers"
+    },
+    {
+      "key": "date",
+      "label": "Date",
+      "kind": "date",
+      "default": "today"
+    }
+  ],
+  "style": {
+    "font": "sans",
+    "bold": true,
+    "align": "center",
+    "border": "thin",
+    "invert": false,
+    "barcode": "auto",
+    "date_format": "%b %-d, %Y"
+  }
+}

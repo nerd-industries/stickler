@@ -1,0 +1,29 @@
+{
+  "id": "barcode-plain",
+  "name": "Barcode",
+  "category": "Tech",
+  "layout": "barcode",
+  "fields": [
+    {
+      "key": "code",
+      "label": "Barcode",
+      "kind": "barcode_data",
+      "default": "123456789012"
+    },
+    {
+      "key": "caption",
+      "label": "Caption",
+      "kind": "text",
+      "default": ""
+    }
+  ],
+  "style": {
+    "font": "sans",
+    "bold": true,
+    "align": "center",
+    "border": "none",
+    "invert": false,
+    "barcode": "auto",
+    "date_format": "%b %-d, %Y"
+  }
+}

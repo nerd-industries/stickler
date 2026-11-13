@@ -1,0 +1,29 @@
+{
+  "id": "storage-bin",
+  "name": "Storage bin",
+  "category": "Home",
+  "layout": "icon_text",
+  "fields": [
+    {
+      "key": "icon",
+      "label": "Icon",
+      "kind": "icon",
+      "default": "package"
+    },
+    {
+      "key": "text",
+      "label": "Contents",
+      "kind": "multiline",
+      "default": "Holiday\nLights"
+    }
+  ],
+  "style": {
+    "font": "sans",
+    "bold": true,
+    "align": "left",
+    "border": "thin",
+    "invert": false,
+    "barcode": "auto",
+    "date_format": "%b %-d, %Y"
+  }
+}

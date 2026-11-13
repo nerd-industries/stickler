@@ -1,0 +1,29 @@
+{
+  "id": "asset-tag",
+  "name": "Asset tag",
+  "category": "Tech",
+  "layout": "barcode",
+  "fields": [
+    {
+      "key": "code",
+      "label": "Barcode",
+      "kind": "barcode_data",
+      "default": "ASSET-0001"
+    },
+    {
+      "key": "caption",
+      "label": "Caption",
+      "kind": "text",
+      "default": "ASSET-0001"
+    }
+  ],
+  "style": {
+    "font": "condensed",
+    "bold": true,
+    "align": "center",
+    "border": "none",
+    "invert": false,
+    "barcode": "auto",
+    "date_format": "%b %-d, %Y"
+  }
+}

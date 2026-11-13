@@ -1,0 +1,35 @@
+{
+  "id": "spice",
+  "name": "Spice",
+  "category": "Kitchen",
+  "layout": "icon_text",
+  "fields": [
+    {
+      "key": "icon",
+      "label": "Icon",
+      "kind": "icon",
+      "default": "leaf"
+    },
+    {
+      "key": "name",
+      "label": "Spice",
+      "kind": "text",
+      "default": "Oregano"
+    },
+    {
+      "key": "note",
+      "label": "Note",
+      "kind": "text",
+      "default": ""
+    }
+  ],
+  "style": {
+    "font": "rounded",
+    "bold": true,
+    "align": "left",
+    "border": "rounded",
+    "invert": false,
+    "barcode": "auto",
+    "date_format": "%b %-d, %Y"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "id": "medicine",
+  "name": "Medicine",
+  "category": "Home",
+  "layout": "icon_text",
+  "fields": [
+    {
+      "key": "icon",
+      "label": "Icon",
+      "kind": "icon",
+      "default": "pill"
+    },
+    {
+      "key": "name",
+      "label": "Medicine",
+      "kind": "text",
+      "default": "Ibuprofen"
+    },
+    {
+      "key": "dose",
+      "label": "Dose",
+      "kind": "text",
+      "default": "1 tablet / 6 h"
+    }
+  ],
+  "style": {
+    "font": "sans",
+    "bold": true,
+    "align": "left",
+    "border": "none",
+    "invert": false,
+    "barcode": "auto",
+    "date_format": "%b %-d, %Y"
+  }
+}

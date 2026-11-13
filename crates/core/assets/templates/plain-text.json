@@ -1,0 +1,23 @@
+{
+  "id": "plain-text",
+  "name": "Plain text",
+  "category": "Text",
+  "layout": "text",
+  "fields": [
+    {
+      "key": "text",
+      "label": "Text",
+      "kind": "multiline",
+      "default": "Label"
+    }
+  ],
+  "style": {
+    "font": "sans",
+    "bold": false,
+    "align": "center",
+    "border": "none",
+    "invert": false,
+    "barcode": "auto",
+    "date_format": "%b %-d, %Y"
+  }
+}

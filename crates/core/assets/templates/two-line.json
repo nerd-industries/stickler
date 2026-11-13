@@ -1,0 +1,29 @@
+{
+  "id": "two-line",
+  "name": "Two lines",
+  "category": "Text",
+  "layout": "text",
+  "fields": [
+    {
+      "key": "title",
+      "label": "Title",
+      "kind": "text",
+      "default": "Power Supply"
+    },
+    {
+      "key": "subtitle",
+      "label": "Details",
+      "kind": "text",
+      "default": "12 V · 2 A"
+    }
+  ],
+  "style": {
+    "font": "sans",
+    "bold": true,
+    "align": "center",
+    "border": "none",
+    "invert": false,
+    "barcode": "auto",
+    "date_format": "%b %-d, %Y"
+  }
+}

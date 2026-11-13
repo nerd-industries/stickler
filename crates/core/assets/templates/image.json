@@ -1,0 +1,23 @@
+{
+  "id": "image",
+  "name": "Image",
+  "category": "Other",
+  "layout": "image",
+  "fields": [
+    {
+      "key": "image",
+      "label": "Image",
+      "kind": "image_path",
+      "default": ""
+    }
+  ],
+  "style": {
+    "font": "sans",
+    "bold": true,
+    "align": "center",
+    "border": "none",
+    "invert": false,
+    "barcode": "auto",
+    "date_format": "%b %-d, %Y"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "id": "link-qr",
+  "name": "Link QR",
+  "category": "Tech",
+  "layout": "qr_text",
+  "fields": [
+    {
+      "key": "qr",
+      "label": "Link",
+      "kind": "qr_data",
+      "default": "https://example.com"
+    },
+    {
+      "key": "text",
+      "label": "Text",
+      "kind": "multiline",
+      "default": "Scan me"
+    }
+  ],
+  "style": {
+    "font": "sans",
+    "bold": true,
+    "align": "left",
+    "border": "none",
+    "invert": false,
+    "barcode": "auto",
+    "date_format": "%b %-d, %Y"
+  }
+}
