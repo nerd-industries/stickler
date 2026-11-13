@@ -73,6 +73,9 @@ impl Config {
             std::fs::create_dir_all(dir).map_err(|e| err(e.to_string()))?;
         }
         let s = toml::to_string_pretty(self).map_err(|e| err(e.to_string()))?;
-        std::fs::write(path, s).map_err(|e| err(e.to_string()))
+        // Write a temp file then rename, so a concurrent reader never sees half a file.
+        let tmp = path.with_extension(format!("toml.{}.tmp", std::process::id()));
+        std::fs::write(&tmp, s).map_err(|e| err(e.to_string()))?;
+        std::fs::rename(&tmp, path).map_err(|e| err(e.to_string()))
     }
 }

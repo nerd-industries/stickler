@@ -32,6 +32,7 @@
   let png = $state<string | null>(null)
   let previewError = $state<string | null>(null)
   let previewSize = $state('14x40')
+  let previewSource = $state('default')
   let printing = $state(false)
   let ejecting = $state(false)
   let saving = $state(false)
@@ -52,6 +53,10 @@
   })
 
   const rollSize = $derived(report?.roll ? `${report.roll.size.width_mm}x${report.roll.size.length_mm}` : null)
+  // The printer always uses the loaded roll's size, so follow it.
+  $effect(() => {
+    if (rollSize) size = 'auto'
+  })
 
   // Debounced preview; only the newest request may update the image.
   let seq = 0
@@ -64,6 +69,7 @@
         if (mine !== seq) return
         png = p.png_base64
         previewSize = p.size
+        previewSource = p.source
         previewError = null
       } catch (e) {
         if (mine === seq) previewError = (e as Error).message
@@ -187,8 +193,12 @@
       {#if previewError}
         <span class="err">{previewError}</span>
       {:else}
-        {sizeLabel(previewSize)}
-        {#if size === 'auto' && report?.roll}· from the loaded roll{/if}
+        {sizeLabel(previewSize)},
+        {previewSource === 'roll'
+          ? 'the size of the loaded roll'
+          : previewSource === 'explicit'
+            ? 'as chosen'
+            : 'assumed; the printer will use the loaded roll’s size if it can read it'}
       {/if}
     </p>
   </div>
@@ -246,8 +256,8 @@
   <footer class="bar">
     <label class="ctl">
       <span class="field-label">Label size</span>
-      <select class="input" bind:value={size}>
-        <option value="auto">{rollSize ? `From printer (${sizeLabel(rollSize)})` : 'From printer'}</option>
+      <select class="input" bind:value={size} disabled={!!rollSize} title={rollSize ? 'Set by the roll in the printer' : ''}>
+        <option value="auto">{rollSize ? `Loaded roll (${sizeLabel(rollSize)})` : 'From printer'}</option>
         {#each presets as p (p)}
           <option value={p}>{sizeLabel(p)}</option>
         {/each}

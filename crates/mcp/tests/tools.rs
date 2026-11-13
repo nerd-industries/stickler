@@ -99,3 +99,28 @@ async fn unknown_template_is_tool_error() {
     let r = s.preview_label(Parameters(p)).await.unwrap();
     assert!(is_error(&r));
 }
+
+fn image_of(r: &CallToolResult) -> String {
+    r.content.iter().find_map(|c| c.as_image().map(|i| i.data.clone())).expect("image")
+}
+
+#[tokio::test]
+async fn partial_style_merges_into_template_style() {
+    let (s, _d) = server(None);
+    let patch = PreviewParams {
+        template: "kitchen-jar".into(),
+        fields: None,
+        style: Some(serde_json::json!({ "border": "thin" })),
+        label_size: Some("14x40".into()),
+    };
+    // kitchen-jar's own style is rounded font, left aligned; only the border should change.
+    let full = PreviewParams {
+        template: "kitchen-jar".into(),
+        fields: None,
+        style: Some(serde_json::json!({ "font": "rounded", "bold": true, "align": "left", "border": "thin" })),
+        label_size: Some("14x40".into()),
+    };
+    let a = s.preview_label(Parameters(patch)).await.unwrap();
+    let b = s.preview_label(Parameters(full)).await.unwrap();
+    assert!(image_of(&a) == image_of(&b), "partial style should keep the template's font and alignment");
+}

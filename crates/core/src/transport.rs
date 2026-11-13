@@ -48,11 +48,13 @@ impl RfcommTransport {
             .parse()
             .map_err(|_| PrinterError::Bluetooth(format!("'{mac}' isn't a Bluetooth address")))?;
         let target = bluer::rfcomm::SocketAddr::new(addr, 1);
-        let stream = match tokio::time::timeout(timeout, bluer::rfcomm::Stream::connect(target)).await {
+        // One deadline covers both the connect call and the link coming up.
+        let deadline = tokio::time::Instant::now() + timeout;
+        let stream = match tokio::time::timeout_at(deadline, bluer::rfcomm::Stream::connect(target)).await {
             Ok(Ok(s)) => s,
             _ => return Err(PrinterError::Unreachable(UNREACHABLE.into())),
         };
-        Ok(Self { stream, connect_deadline: Some(tokio::time::Instant::now() + timeout) })
+        Ok(Self { stream, connect_deadline: Some(deadline) })
     }
 }
 

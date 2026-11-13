@@ -28,7 +28,7 @@ pub struct PreviewParams {
     pub template: String,
     /// Field values by key; omitted fields use the template default.
     pub fields: Option<BTreeMap<String, String>>,
-    /// Optional style override: {font: sans|sans_bold|condensed|rounded, bold, align: left|center|right,
+    /// Optional style changes, merged into the template's style: {font: sans|sans_bold|condensed|rounded, bold, align: left|center|right,
     /// border: none|thin|thick|rounded|double, invert, barcode: auto|code128|ean13, date_format}.
     pub style: Option<serde_json::Value>,
     /// Label size as WIDTHxLENGTH in mm, e.g. "14x40". Normally read from the printer.
@@ -102,8 +102,16 @@ fn parse_size(s: &Option<String>) -> Result<Option<LabelSize>, String> {
     s.as_deref().map(str::parse).transpose()
 }
 
-fn parse_style(v: Option<serde_json::Value>) -> Result<Option<Style>, String> {
-    v.map(|v| serde_json::from_value::<Style>(v).map_err(|e| format!("Bad style: {e}"))).transpose()
+/// Apply a (possibly partial) style patch on top of `base`, key by key.
+fn merge_style(base: Option<&Style>, patch: Option<serde_json::Value>) -> Result<Option<Style>, String> {
+    let Some(patch) = patch else { return Ok(None) };
+    let mut merged = serde_json::to_value(base.cloned().unwrap_or_default()).map_err(|e| e.to_string())?;
+    match (merged.as_object_mut(), patch) {
+        (Some(m), serde_json::Value::Object(p)) => m.extend(p),
+        (_, serde_json::Value::Null) => return Ok(None),
+        _ => return Err("Bad style: expected an object like {\"border\": \"thin\"}".into()),
+    }
+    serde_json::from_value(merged).map(Some).map_err(|e| format!("Bad style: {e}"))
 }
 
 fn copies(c: Option<u16>) -> Result<u16, String> {
@@ -168,7 +176,8 @@ impl NelkoServer {
 
     #[tool(description = "Render a label to a PNG preview without printing. Shows exactly what will print.")]
     pub async fn preview_label(&self, Parameters(p): Parameters<PreviewParams>) -> ToolResult {
-        let (explicit, style) = match (parse_size(&p.label_size), parse_style(p.style)) {
+        let base = self.nelko.template(&p.template).map(|t| t.style);
+        let (explicit, style) = match (parse_size(&p.label_size), merge_style(base.as_ref(), p.style)) {
             (Ok(s), Ok(st)) => (s, st),
             (Err(e), _) | (_, Err(e)) => return fail(e),
         };
@@ -194,7 +203,8 @@ impl NelkoServer {
 
     #[tool(description = "Print a label from a template. Size comes from the loaded roll when possible.")]
     pub async fn print_label(&self, Parameters(p): Parameters<PrintParams>) -> ToolResult {
-        let parsed = (|| Ok::<_, String>((parse_size(&p.label_size)?, parse_style(p.style)?, copies(p.copies)?)))();
+        let base = self.nelko.template(&p.template).map(|t| t.style);
+        let parsed = (|| Ok::<_, String>((parse_size(&p.label_size)?, merge_style(base.as_ref(), p.style)?, copies(p.copies)?)))();
         let (size, style, copies) = match parsed {
             Ok(v) => v,
             Err(e) => return fail(e),

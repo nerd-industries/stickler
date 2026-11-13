@@ -10,7 +10,9 @@
   let iconQuery = $state('')
   const shownIcons = $derived(icons.filter((n) => !iconQuery || n.includes(iconQuery.toLowerCase())))
   const isToday = $derived(field.kind === 'date' && (value === '' || value === 'today'))
-  const todayIso = new Date().toISOString().slice(0, 10)
+  // Local date (toISOString is UTC and gives tomorrow's date in the evening west of UTC).
+  const now = new Date()
+  const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 
   async function pickImage() {
     const path = await open({

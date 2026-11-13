@@ -92,14 +92,20 @@ fn one() -> u16 {
 }
 
 pub struct Nelko {
+    /// Last good copy; re-read from `config_path` on every access when set.
     config: Mutex<Config>,
     config_path: Option<PathBuf>,
+    /// When set, user templates are re-read on access (the app and MCP share them).
+    templates_dir: Option<PathBuf>,
     lock_path: PathBuf,
     store: RwLock<TemplateStore>,
+    /// The roll most recently read from the printer this session.
+    known_roll: Mutex<Option<RollInfo>>,
     connector: Box<dyn Connector>,
 }
 
 /// Pick the size: roll, then explicit, then last known, then manual default.
+/// The roll wins so preview and print agree with what's physically loaded.
 fn resolve(roll: Option<&RollInfo>, explicit: Option<LabelSize>, cfg: &Config) -> Result<ResolvedSize, NelkoError> {
     let (size, source) = if let Some(r) = roll {
         (r.size, SizeSource::Roll)
@@ -120,12 +126,24 @@ fn resolve(roll: Option<&RollInfo>, explicit: Option<LabelSize>, cfg: &Config) -
 impl Nelko {
     /// Real service: user config, user templates, Bluetooth.
     pub fn new() -> Result<Self, NelkoError> {
+        Self::at(Config::path(), Config::templates_dir(), Box::new(RfcommConnector))
+    }
+
+    /// Service backed by files on disk, shared live with other processes.
+    /// A broken config file falls back to defaults instead of failing.
+    pub fn at(config_path: PathBuf, templates_dir: PathBuf, connector: Box<dyn Connector>) -> Result<Self, NelkoError> {
+        let config = Config::load_from(&config_path).unwrap_or_else(|e| {
+            eprintln!("stickler: {e}; using default settings");
+            Config::default()
+        });
         Ok(Self {
-            config: Mutex::new(Config::load()?),
-            config_path: Some(Config::path()),
+            config: Mutex::new(config),
+            config_path: Some(config_path),
+            store: RwLock::new(TemplateStore::load(templates_dir.clone())?),
+            templates_dir: Some(templates_dir),
             lock_path: default_lock_path(),
-            store: RwLock::new(TemplateStore::load(Config::templates_dir())?),
-            connector: Box::new(RfcommConnector),
+            known_roll: Mutex::new(None),
+            connector,
         })
     }
 
@@ -134,20 +152,49 @@ impl Nelko {
         static N: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
         let n = N.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let lock_path = std::env::temp_dir().join(format!("nelko-test-{}-{n}.lock", std::process::id()));
-        Self { config: Mutex::new(config), config_path: None, lock_path, store: RwLock::new(store), connector }
-    }
-
-    pub fn config(&self) -> Config {
-        self.config.lock().unwrap_or_else(|p| p.into_inner()).clone()
-    }
-
-    pub fn update_config(&self, f: impl FnOnce(&mut Config)) -> Result<Config, NelkoError> {
-        let mut cfg = self.config.lock().unwrap_or_else(|p| p.into_inner());
-        f(&mut cfg);
-        if let Some(p) = &self.config_path {
-            cfg.save_to(p)?;
+        Self {
+            config: Mutex::new(config),
+            config_path: None,
+            templates_dir: None,
+            lock_path,
+            store: RwLock::new(store),
+            known_roll: Mutex::new(None),
+            connector,
         }
-        Ok(cfg.clone())
+    }
+
+    /// Current settings, re-read from disk so changes made by the other app show up.
+    pub fn config(&self) -> Config {
+        let mut cached = self.config.lock().unwrap_or_else(|p| p.into_inner());
+        if let Some(p) = &self.config_path {
+            if let Ok(fresh) = Config::load_from(p) {
+                *cached = fresh;
+            }
+        }
+        cached.clone()
+    }
+
+    /// Read-modify-write against the file on disk, so concurrent edits aren't lost.
+    pub fn update_config(&self, f: impl FnOnce(&mut Config)) -> Result<Config, NelkoError> {
+        let mut cached = self.config.lock().unwrap_or_else(|p| p.into_inner());
+        if let Some(p) = &self.config_path {
+            if let Ok(fresh) = Config::load_from(p) {
+                *cached = fresh;
+            }
+        }
+        f(&mut cached);
+        if let Some(p) = &self.config_path {
+            cached.save_to(p)?;
+        }
+        Ok(cached.clone())
+    }
+
+    fn reload_templates(&self) {
+        if let Some(dir) = &self.templates_dir {
+            if let Ok(fresh) = TemplateStore::load(dir.clone()) {
+                *self.store.write().unwrap_or_else(|p| p.into_inner()) = fresh;
+            }
+        }
     }
 
     async fn connect(&self) -> Result<(PrinterLock, Printer<Box<dyn Transport>>), PrinterError> {
@@ -161,6 +208,7 @@ impl Nelko {
     }
 
     fn remember_roll(&self, roll: Option<&RollInfo>) {
+        *self.known_roll.lock().unwrap_or_else(|p| p.into_inner()) = roll.cloned();
         if let Some(r) = roll {
             if self.config().last_label != Some(r.size) {
                 let size = r.size;
@@ -194,22 +242,26 @@ impl Nelko {
     /// Resolve the label size; with `query_printer`, asks the printer for the roll first.
     pub async fn resolve_size(&self, explicit: Option<LabelSize>, query_printer: bool) -> Result<ResolvedSize, NelkoError> {
         let roll = if query_printer {
-            match self.connect().await {
+            let roll = match self.connect().await {
                 Ok((_lock, mut p)) => p.roll().await.ok().flatten(),
                 Err(_) => None,
-            }
+            };
+            self.remember_roll(roll.as_ref());
+            roll
         } else {
-            None
+            // Use what the printer last reported, so a preview matches what will print.
+            self.known_roll.lock().unwrap_or_else(|p| p.into_inner()).clone()
         };
-        self.remember_roll(roll.as_ref());
         resolve(roll.as_ref(), explicit, &self.config())
     }
 
     pub fn templates(&self) -> Vec<Template> {
+        self.reload_templates();
         self.store.read().unwrap_or_else(|p| p.into_inner()).list().into_iter().cloned().collect()
     }
 
     pub fn template(&self, id: &str) -> Option<Template> {
+        self.reload_templates();
         self.store.read().unwrap_or_else(|p| p.into_inner()).get(id).cloned()
     }
 
@@ -218,14 +270,17 @@ impl Nelko {
     }
 
     pub fn save_template(&self, t: Template) -> Result<Template, NelkoError> {
+        self.reload_templates();
         self.store.write().unwrap_or_else(|p| p.into_inner()).save_user(t)
     }
 
     pub fn delete_template(&self, id: &str) -> Result<(), NelkoError> {
+        self.reload_templates();
         self.store.write().unwrap_or_else(|p| p.into_inner()).delete_user(id)
     }
 
     pub fn duplicate_template(&self, id: &str, name: &str) -> Result<Template, NelkoError> {
+        self.reload_templates();
         self.store.write().unwrap_or_else(|p| p.into_inner()).duplicate(id, name)
     }
 

@@ -143,3 +143,53 @@ async fn preview_returns_png() {
     let png = n.preview("kitchen-jar", &FieldValues::new(), None, "14x40".parse().unwrap()).unwrap();
     assert_eq!(&png[..4], b"\x89PNG");
 }
+
+fn shared(dir: &std::path::Path) -> Nelko {
+    Nelko::at(dir.join("config.toml"), dir.join("templates"), Box::new(TestConnector { t: None })).unwrap()
+}
+
+#[test]
+fn instances_see_each_others_settings() {
+    let dir = tempfile::tempdir().unwrap();
+    let (app, mcp) = (shared(dir.path()), shared(dir.path()));
+    app.update_config(|c| c.printer_mac = Some("83:9D:F1:BB:5A:73".into())).unwrap();
+    assert_eq!(mcp.config().printer_mac.as_deref(), Some("83:9D:F1:BB:5A:73"));
+}
+
+#[test]
+fn update_does_not_overwrite_other_instances_changes() {
+    let dir = tempfile::tempdir().unwrap();
+    let (app, mcp) = (shared(dir.path()), shared(dir.path()));
+    let _ = mcp.config(); // mcp has an old copy cached
+    app.update_config(|c| c.density = 7).unwrap();
+    mcp.update_config(|c| c.last_label = Some("14x30".parse().unwrap())).unwrap();
+    let on_disk = Config::load_from(&dir.path().join("config.toml")).unwrap();
+    assert_eq!(on_disk.density, 7);
+    assert_eq!(on_disk.last_label.unwrap().to_string(), "14x30");
+}
+
+#[test]
+fn instances_see_each_others_templates() {
+    let dir = tempfile::tempdir().unwrap();
+    let (app, mcp) = (shared(dir.path()), shared(dir.path()));
+    let _ = mcp.templates();
+    let t = app.duplicate_template("kitchen-jar", "Pantry").unwrap();
+    assert!(mcp.template(&t.id).is_some());
+}
+
+#[test]
+fn corrupt_config_falls_back_to_defaults() {
+    let dir = tempfile::tempdir().unwrap();
+    std::fs::write(dir.path().join("config.toml"), "density = [nonsense").unwrap();
+    let n = shared(dir.path());
+    assert_eq!(n.config().density, 15);
+}
+
+#[tokio::test]
+async fn preview_size_follows_known_roll_like_print_does() {
+    let replies = vec![vec![0x00], b"BATTERY \x87\x00\r\n".to_vec(), b"CONFIG \x00\xcb\x00\x02\x02\x04\x02\x0e\x02\x01\r\n".to_vec(), tag(14, 30)];
+    let (n, _t, _d) = service(Some(replies), paired());
+    n.report().await;
+    let r = n.resolve_size(Some("14x40".parse().unwrap()), false).await.unwrap();
+    assert_eq!((r.size.to_string(), r.source), ("14x30".to_string(), SizeSource::Roll));
+}
