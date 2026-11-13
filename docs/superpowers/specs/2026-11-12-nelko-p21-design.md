@@ -229,5 +229,13 @@ Any layout can add `border`: none, thin, thick, rounded or double. The built-in 
 - **Resolved:** the app appends `\r\n` after the raw bitmap bytes (`LabelCommand.initBitmap*`).
 - **Partly resolved:** the app's FORWARD/NORMAL enum values are 0,0, so it would send `DIRECTION 0,0`, but the capture shows `DIRECTION 1,1`. Use the captured `1,1` (known to print). The hardware rotation test settles which one is visually correct.
 - Density: use 1–15 with a default of 15 (what the capture used). The user can lower it in settings.
-- The rotation direction (hardware test, §5.2).
-- The advertised Bluetooth name. The app matches the BLE name `P21`; confirm on first scan.
+
+### 9.1 Hardware findings (user's P21, 2026-11-12) — binding
+- Advertised name **`P21`** (MAC 83:9D:F1:BB:5A:73). Shows up in a BR/EDR scan; pairs with **no PIN**; exposes the Serial Port UUID.
+- Wait about **1 s after the RFCOMM connect** before sending commands; earlier commands were ignored.
+- **The status and label queries need a CRLF** on this firmware: `1B 21 3F 0D 0A` and `1B 21 6F 0D 0A`. Without it there's no reply.
+- Replies have a **space after the keyword**: `BATTERY \x99\x00\r\n` (99%, not charging) and `CONFIG \x00\xcb\x00\x02\x02\x04\x02\x0e\x02\x01\r\n` (203 dpi, hw 0.2.2, fw 4.2.14, auto-off 30 min, beep on). Parsers accept an optional space.
+- The roll tag is `000c011203000301121215280f0eed03`, identical to the documented example (14×40 white, gapped, v1).
+- Status is `0x20` (busy) while printing and `0x00` when done (about 0.5 s per label at 14×40).
+- **Rotation = clockwise**: landscape design → rotate 90° CW → rows of 96 dots. The label exits to the left with the printer held logo-up, start of the design first. The top of the design is the edge facing up. This was verified with an arrow test.
+- The job `SIZE 14 mm,40 mm / GAP 5 mm,0 mm / DIRECTION 1,1 / DENSITY 15 / CLS / BITMAP 0,18,12,284,1,<data>\r\n / PRINT 2` printed 2 perfect labels: text crisp, border fully on the label, second copy aligned to the gap. **Density 15 confirmed good.**
