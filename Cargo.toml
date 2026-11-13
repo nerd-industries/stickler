@@ -1,0 +1,15 @@
+[workspace]
+resolver = "3"
+members = ["crates/core"]
+
+[workspace.package]
+edition = "2024"
+version = "0.1.0"
+license = "MIT"
+
+[workspace.dependencies]
+nelko-core = { path = "crates/core" }
+thiserror = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
