@@ -2,6 +2,7 @@
 //! dots); `finish` thresholds it to 1-bit; `RenderedLabel` produces both the
 //! print bitmap and the preview PNG from the same pixels.
 
+pub mod elements;
 pub mod text;
 
 use crate::geometry::{DOTS_PER_MM, LabelSize, PrintArea, print_area};
