@@ -231,7 +231,7 @@ Any layout can add `border`: none, thin, thick, rounded or double. The built-in 
 - Density: use 1–15 with a default of 15 (what the capture used). The user can lower it in settings.
 
 ### 9.1 Hardware findings (user's P21, 2026-11-12) — binding
-- Advertised name **`P21`** (MAC 83:9D:F1:BB:5A:73). Shows up in a BR/EDR scan; pairs with **no PIN**; exposes the Serial Port UUID.
+- Advertised name **`P21`**. Shows up in a BR/EDR scan; pairs with **no PIN**; exposes the Serial Port UUID.
 - Wait about **1 s after the RFCOMM connect** before sending commands; earlier commands were ignored.
 - **The status and label queries need a CRLF** on this firmware: `1B 21 3F 0D 0A` and `1B 21 6F 0D 0A`. Without it there's no reply.
 - Replies have a **space after the keyword**: `BATTERY \x99\x00\r\n` (99%, not charging) and `CONFIG \x00\xcb\x00\x02\x02\x04\x02\x0e\x02\x01\r\n` (203 dpi, hw 0.2.2, fw 4.2.14, auto-off 30 min, beep on). Parsers accept an optional space.
