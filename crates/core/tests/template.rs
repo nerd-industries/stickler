@@ -138,3 +138,24 @@ fn image_template_without_path_errors() {
     let t = s.get("image").unwrap();
     assert!(render_template(t, &FieldValues::new(), "14x40".parse().unwrap()).is_err());
 }
+
+#[test]
+fn empty_qr_or_barcode_is_left_out() {
+    let (_d, s) = store();
+    let size: LabelSize = "14x40".parse().unwrap();
+    for (id, key) in [("wifi-qr", "qr"), ("asset-tag", "code")] {
+        let t = s.get(id).unwrap();
+        let mut v = FieldValues::new();
+        v.insert(key.into(), String::new());
+        let l = render_template(t, &v, size).unwrap_or_else(|e| panic!("{id}: {e}"));
+        assert!(l.mono.iter().any(|&b| b), "{id} should still show its text");
+    }
+}
+
+#[test]
+fn all_fields_empty_still_errors_for_qr() {
+    let (_d, s) = store();
+    let t = s.get("link-qr").unwrap();
+    let v: FieldValues = t.fields.iter().map(|f| (f.key.clone(), String::new())).collect();
+    assert!(render_template(t, &v, "14x40".parse().unwrap()).is_err());
+}

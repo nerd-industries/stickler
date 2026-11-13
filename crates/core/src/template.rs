@@ -145,7 +145,10 @@ pub fn render_template(t: &Template, values: &FieldValues, size: LabelSize) -> R
         Layout::QrText => {
             let data = first(t, values, &[FieldKind::QrData]);
             let lines = text_lines(t, values);
-            if lines.is_empty() {
+            if data.is_empty() && !lines.is_empty() {
+                // An empty field is left out: text only.
+                draw_text_fit(&mut c, inner, &lines, &ts)?;
+            } else if lines.is_empty() {
                 let side = inner.h.min(inner.w);
                 draw_qr(&mut c, Rect { x: inner.x + (inner.w - side) / 2.0, y: inner.y, w: side, h: inner.h }, data)?;
             } else {
@@ -156,7 +159,9 @@ pub fn render_template(t: &Template, values: &FieldValues, size: LabelSize) -> R
         Layout::Barcode => {
             let data = first(t, values, &[FieldKind::BarcodeData]);
             let lines = text_lines(t, values);
-            if lines.is_empty() {
+            if data.is_empty() && !lines.is_empty() {
+                draw_text_fit(&mut c, inner, &lines, &ts)?;
+            } else if lines.is_empty() {
                 draw_barcode(&mut c, inner, data, t.style.barcode)?;
             } else {
                 let bar_h = (inner.h * 0.72).floor();

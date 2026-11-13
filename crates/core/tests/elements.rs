@@ -44,7 +44,8 @@ fn ean_falls_back_to_code128() {
     assert_eq!(choose_kind("123", BarcodeKind::Auto), BarcodeKind::Code128);
     assert_eq!(choose_kind("5901234123457", BarcodeKind::Auto), BarcodeKind::Ean13);
     assert_eq!(choose_kind("5901234123458", BarcodeKind::Auto), BarcodeKind::Code128);
-    assert_eq!(choose_kind("590123412345", BarcodeKind::Auto), BarcodeKind::Ean13);
+    // 12 digits stay Code128: auto-adding an EAN check digit would change the scanned value.
+    assert_eq!(choose_kind("590123412345", BarcodeKind::Auto), BarcodeKind::Code128);
 }
 
 #[test]
@@ -54,6 +55,10 @@ fn barcode_draws_on_whole_dots() {
     let used = draw_barcode(&mut c, r, "ASSET-0042", BarcodeKind::Auto).unwrap();
     assert_eq!(used.x.fract(), 0.0);
     assert_eq!(used.w.fract(), 0.0);
+    // Quiet zone of at least 10 modules each side (Code128 minimum).
+    // "ASSET-0042" in Code128-B = 13 symbols * 11 + 2 stop = 145 modules -> m = 1 at 284 dots.
+    assert!(used.x - r.x >= 10.0, "left quiet zone {}", used.x - r.x);
+    assert!(r.x + r.w - (used.x + used.w) >= 10.0, "right quiet zone");
     assert!(any_black(c));
 }
 
@@ -107,4 +112,25 @@ fn missing_image_is_asset_error() {
     let mut c = canvas();
     let r = c.bounds();
     assert!(matches!(draw_image(&mut c, r, Path::new("/nope.png"), Dither::FloydSteinberg), Err(RenderError::Asset(_))));
+}
+
+#[test]
+fn short_barcode_keeps_ten_module_quiet_zone() {
+    let mut c = canvas();
+    let r = c.bounds();
+    // "A1" in Code128-B: (start + 2 data + check) * 11 + 13 stop = 57 modules.
+    let used = draw_barcode(&mut c, r, "A1", BarcodeKind::Code128).unwrap();
+    let m = used.w / 57.0;
+    assert_eq!(m.fract(), 0.0);
+    assert!(used.x - r.x >= 10.0 * m, "left quiet {} < 10 modules of {m}", used.x - r.x);
+    assert!(r.x + r.w - (used.x + used.w) >= 10.0 * m, "right quiet zone too small");
+}
+
+#[test]
+fn numeric_code128_uses_compact_set_c() {
+    // Set C: (start + 6 pairs + check) * 11 + 13 = 101 modules, vs 167 in set B.
+    let mut c = canvas();
+    let r = c.bounds();
+    let used = draw_barcode(&mut c, r, "123456789012", BarcodeKind::Code128).unwrap();
+    assert_eq!(used.w % 101.0, 0.0, "width {} is not a multiple of 101 modules", used.w);
 }

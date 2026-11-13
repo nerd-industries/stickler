@@ -52,12 +52,13 @@ pub enum BarcodeKind {
     Ean13,
 }
 
-/// `Auto` → EAN-13 for 12–13 digits with a valid checksum, else Code128.
+/// `Auto` → EAN-13 for exactly 13 digits with a valid checksum, else Code128.
+/// (12 digits stay Code128: adding a check digit would change what scans.)
 pub fn choose_kind(data: &str, kind: BarcodeKind) -> BarcodeKind {
     match kind {
         BarcodeKind::Auto => {
             let d = data.trim();
-            let digits = (12..=13).contains(&d.len()) && d.bytes().all(|b| b.is_ascii_digit());
+            let digits = d.len() == 13 && d.bytes().all(|b| b.is_ascii_digit());
             if digits && barcoders::sym::ean13::EAN13::new(d).is_ok() {
                 BarcodeKind::Ean13
             } else {
@@ -84,14 +85,19 @@ pub fn draw_barcode(c: &mut Canvas, rect: Rect, data: &str, kind: BarcodeKind) -
                     "Barcodes can only hold plain letters, numbers and symbols (no accents or emoji).".into(),
                 ));
             }
-            barcoders::sym::code128::Code128::new(format!("\u{0181}{d}"))
+            // Character set C packs digit pairs (about half the width) for even-length numbers.
+            let set = if d.len() % 2 == 0 && d.bytes().all(|b| b.is_ascii_digit()) { '\u{0106}' } else { '\u{0181}' };
+            barcoders::sym::code128::Code128::new(format!("{set}{d}"))
                 .map_err(|e| RenderError::InvalidData(format!("Can't make a barcode from that: {e}")))?
                 .encode()
         }
     };
     let r = snap(rect);
-    let quiet = 8.0;
-    let m = (r.w / (modules.len() as f32 + quiet)).floor();
+    let quiet = 20.0; // 10 modules each side (Code128 minimum)
+    let n = modules.len() as f32;
+    // Prefer a full quiet zone; on tiny labels use 1-dot modules with whatever
+    // margin remains (the unprinted label edge adds more blank space).
+    let m = (r.w / (n + quiet)).floor().max(if n <= r.w { 1.0 } else { 0.0 });
     if m < 1.0 {
         return Err(RenderError::InvalidData("That barcode is too long for this label. Use shorter data.".into()));
     }
